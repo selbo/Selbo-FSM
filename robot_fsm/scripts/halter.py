@@ -11,28 +11,45 @@ class Halter(object):
         self.pub_resume = rospy.Publisher('/resume_navigation',Empty, queue_size=1)
 
 	websocket.enableTrace(True)
-	ws = websocket.WebSocketApp("ws://104.198.196.211:8000",
+	self.my_ws = websocket.WebSocketApp("ws://104.198.196.211:8000",
 				    on_message = self.on_ws_message,
 				    on_error = self.on_ws_error,
 				    on_close = self.on_ws_close)
-	ws.on_open = self.on_ws_open
-	#ws.run_forever()
+	self.my_ws.on_open = self.on_ws_open
+	self.my_ws.run_forever()
 
     def on_ws_open(self, ws):
 	pass
 		
     def on_ws_message(self, ws, message):
 	print "### inside on_message ###"
-	j = json.loads(message)
-	if message['cmd'] == 'nav':
-	    if message['data'] == 'pause':			
-		msg = Empty()
-		rospy.sleep(0.5)
-		self.pub_pause.publish(msg)
-	    elif message['data'] == 'resume':
-		msg = Empty()
-		rospy.sleep(0.5)
-		self.pub_resume.publish(msg)
+	print message
+	try:
+	    j = json.loads(str(message))    
+	    if j['cmd'] == 'nav':
+		if j['data'] == 'pause':			
+		    print 'received pause'
+		    msg = Empty()
+		    rospy.sleep(0.5)
+		    self.pub_pause.publish(msg)
+		    json_ack_dict = {}
+		    json_ack_dict['cmd'] = 'nav_status'
+		    json_ack_dict['data'] = 'paused'
+		    jack_ack = json.dumps(json_ack_dict)		    
+		    self.my_ws.send(jack_ack)
+		elif j['data'] == 'resume':
+		    print 'received resume'
+		    msg = Empty()
+		    rospy.sleep(0.5)
+		    self.pub_resume.publish(msg)
+		    json_ack_dict = {}
+		    json_ack_dict['cmd'] = 'nav_status'
+		    json_ack_dict['data'] = 'resumed'
+		    jack_ack = json.dumps(json_ack_dict)		    
+		    self.my_ws.send(jack_ack)
+
+	except:
+	    print 'Ignoring this message'
 
     def on_ws_error(self, ws, error):
 	print error
@@ -40,7 +57,7 @@ class Halter(object):
     def on_ws_close(self,ws):
 	print "### closed ###"
 
-	'''
+    '''
     def run(self):
         while not rospy.is_shutdown():
             msg = Empty()
@@ -49,16 +66,17 @@ class Halter(object):
             msg = Empty()
             rospy.sleep(5)
             self.pub_resume.publish(msg)
-	'''
+    '''
 
 		
 		
 if __name__ == '__main__':
-    h = Halter()
-    print 'finished halter initialization'
-    rospy.spin()
+    try:
+	h = Halter()
+    finally:
+	h.my_ws.close()
+    #rospy.spin()
     #h.run()
-    ws.close()
 
     
 
