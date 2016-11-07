@@ -11,7 +11,7 @@ class Halter(object):
         self.pub_resume = rospy.Publisher('/resume_navigation',Empty, queue_size=1)
 
 	websocket.enableTrace(True)
-	self.my_ws = websocket.WebSocketApp("ws://104.198.196.211:8000",
+	self.my_ws = websocket.WebSocketApp("ws://130.211.184.58:8000",
 				    on_message = self.on_ws_message,
 				    on_error = self.on_ws_error,
 				    on_close = self.on_ws_close)
